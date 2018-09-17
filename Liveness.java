@@ -16,7 +16,48 @@ package student;
 import java.util.*;
 import java.io.*;
 
-public class Liveness {		
+
+//An instance of a parser class contain an arraylist of all variables in the source code
+//the method should parse a given program line and store its info
+class Parser {
+	ArrayList<Variable> Var; 
+	/* method for parsing a live statement
+	 * @param: line contain live-in or live-out live straight 
+	 * from the source code
+	 * @add to array list containing all variables on the line
+	 */
+	public void parseLiveStmt (String line, String liveType) {
+		//Variables on a live out statement are always new
+	}
+
+	public void parseAssignStmt (String line) {
+
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public class Liveness {	
+	
+
+
+
+
 	// PRE: fInName is a valid input file
 	// POST: returns a TreeMap mapping variables (String) to registers (Integer) 
 	public static TreeMap<String, Integer> generateSolution(String fInName) {
@@ -30,7 +71,7 @@ public class Liveness {
 
 	public static void main(String[] args) {	
 		//Assuming input file is arguement 0 and output file is arguement 1
-		writeSolutionToFile(generateSolution(args[0]), args[1]);
+		
 	}
 	
 }
