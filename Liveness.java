@@ -21,20 +21,53 @@ import java.io.*;
 //the method should parse a given program line and store its info
 class Parser {
 
-	ArrayList<Variable> Vars;
+	ArrayList<Variable> varList;
 	 
 	/* method for parsing a live statement
 	 * @param: line contain live-in or live-out live straight 
 	 * from the source code
 	 * @add to array list containing all variables on the line
 	 */
-	public void parseLiveStmt (String line, String liveType) {
+	public void parseLiveInStmt (String line, String liveType) {
+		String[] tokensSepbySpace = line.split("\\s+"); //(O(n))
+		if (liveType.equals("out")) {
+			for (int i=1; i<=tokensSepbySpace.length-1; i++) {
+				//add new variable to list
+			}
+		} 
+		if (liveType.equals("in")) {
+			for (int i=1; i<=tokensSepbySpace.length-1; i++) {
+				//find variable and add a end line number
+			}
+		}
+
+	}
+
+	public void parseLiveOutStmt (String line) {
 
 	}
 
 	public void parseAssignStmt (String line) {
 
 	}
+
+	/*
+	public void addLiveOutLineVarToList(ArrayList<String> varsOnLine, Integer lineNo) {
+		for (int i=0; i<=varsOnLine.size()-1; i++) {
+			addNewVariabletoList(varsOnLine.get(i), lineNo); 
+		}
+	}
+
+	public static ArrayList<String> parseLiveStmt (String line) {
+		ArrayList<String> Vars = new ArrayList<String>();
+		
+		for (int i=1; i<=tokensSepbySpace.length-1; i++) {
+			Vars.add(tokensSepbySpace[i]);
+		}
+		return Vars; 
+	} */
+
+
 }
 
 
