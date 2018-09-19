@@ -20,14 +20,16 @@ import java.io.*;
 //An instance of a parser class contain an arraylist of all variables in the source code
 //the method should parse a given program line and store its info
 class Parser {
-	ArrayList<Variable> Var; 
+
+	ArrayList<Variable> Vars;
+	 
 	/* method for parsing a live statement
 	 * @param: line contain live-in or live-out live straight 
 	 * from the source code
 	 * @add to array list containing all variables on the line
 	 */
 	public void parseLiveStmt (String line, String liveType) {
-		//Variables on a live out statement are always new
+
 	}
 
 	public void parseAssignStmt (String line) {
@@ -35,6 +37,35 @@ class Parser {
 	}
 }
 
+
+class Variable {
+
+	String name;
+	//example: say variable a is alive at line 2-5 and 9-11, then
+	//a.startAtLine = {5, 2}, a.endAtLine = {11, 9} 
+	ArrayList<Integer> startAtLines; 
+	ArrayList<Integer> endAtLines;
+
+	public Variable(String variableName) {
+		this.startAtLines = new ArrayList<Integer>();
+		this.endAtLines = new ArrayList<Integer>();
+		this.name = variableName; 
+	}
+
+	/**
+	 * method for adding line number at which the variable end its current live
+	 */
+	public void addEndLineNo(Integer i) {
+		this.endAtLines.add(i); 
+	}
+
+	/**
+	 * method for adding line number at which the variable starts its live
+	 */
+	public void addStartLineNo(Integer i) {
+		this.startAtLines.add(i); 
+	}
+} 
 
 
 
