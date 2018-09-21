@@ -15,8 +15,6 @@ package student;
 
 import java.util.*;
 import java.io.*;
-import java.util.regex.*;
-
 
 //An instance of a parser class contain an arraylist of all variables in the source code
 //the method should parse a given program line and store its info
@@ -33,7 +31,7 @@ class Parser {
 	 * from the source code
 	 * @add to array list containing all variables on the line
 	 */
-	public void parseLiveInStmt (String line, String liveType, Integer lineNo) {
+	public void parseLiveStmt (String line, String liveType, Integer lineNo) {
 		String[] tokensSepbySpace = line.split("\\s+"); //(O(n))
 		if (liveType.equals("out")) {
 			for (int i=1; i<=tokensSepbySpace.length-1; i++) {
@@ -59,8 +57,9 @@ class Parser {
 	}
 
 	public void parseExpr (String rhs, Integer lineNo) {
+		//consider spaces afer "[" and before "]"
 		if (rhs.matches("(mem\\[)([\\s\\S]*)")) {
-			rhs = rhs.substring(4, rhs.length()); //consider spaces afer "[" and before "]"
+			rhs = rhs.substring(4, rhs.length()); 
 			StringTokenizer st = new StringTokenizer(rhs, "]");
 			rhs = st.nextToken(); 
 		}  
@@ -155,30 +154,36 @@ class Variable {
 } 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 public class Liveness {	
 	
-
-
-
-
 	// PRE: fInName is a valid input file
 	// POST: returns a TreeMap mapping variables (String) to registers (Integer) 
 	public static TreeMap<String, Integer> generateSolution(String fInName) {
+		File inFile = null; 
+		if (fInName.length() > 0) {
+			inFile = new File(fInName);
+		} else {
+			System.out.println("Please input a valid file arguement"); 
+		}	
+		try {
+			//Read the entire source code into memory 
+			BufferedReader br = new BufferedReader(new FileReader(inFile));
+			ArrayList<String> programLines = new ArrayList<String>(); 
+			String currentLine;
+			while ((currentLine = br.readLine())!=null) {
+				programLines.add(currentLine);
+			}
+			//Parse and store variables
+			Parser p = new Parser();
+			p.parseLiveStmt(programLines.get(programLines.size()-1), "out", programLines.size()); 
+			for (int i=programLines.size()-2; i>=1; i--) {
+				p.parseAssignStmt(programLines.get(i), i+1); 
+			} 
+			p.parseLiveStmt(programLines.get(0), "in", 1);
+			p.printInfo();  
+		} catch (IOException e) {
+			e.printStackTrace(); 
+		}
 		return null; 
 	}
 
@@ -189,8 +194,7 @@ public class Liveness {
 
 	public static void main(String[] args) {	
 		//Assuming input file is arguement 0 and output file is arguement 1
-		Parser myparser = new Parser ();
-		myparser.parseAssignStmt("j1   :=        mem[1 + a7]", 0);
+		generateSolution(args[0]); 
 	}
 	
 }
