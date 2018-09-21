@@ -3,12 +3,11 @@
 * for a valid "Liveness" source code. Specifically, the program parsed
 * a given input soruce file line by line to retrieve its unique 
 * variables and their liveness information. Based on these information,
-* the programm optimally allocate them so a minimal number of registers 
-* is used during run time. 
+* the programm allocate variables to a set of contiguous registers such that
+* a minimal number of registers is used during run time. 
 *
-* @author DEYE CHEN
-* @SID 44624522
-* @version 1.0
+* @author DEYE CHEN (44624522), LUKE MCLEAN 
+* @version 2.0
 * @since 2018-09-02
 */
 package student;
@@ -16,8 +15,11 @@ package student;
 import java.util.*;
 import java.io.*;
 
-//An instance of a parser class contain an arraylist of all variables in the source code
-//the method should parse a given program line and store its info
+/**
+ *An instance of a parser class contain an arraylist of all variables in the source code.
+ *The methods of a Parser should parse an input program line and store its liveness information in the arraylist
+ *Note: the parser is designed to parse each line of the program in reverse order
+*/
 class Parser {
 
 	ArrayList<Variable> varList;
@@ -35,11 +37,11 @@ class Parser {
 		String[] tokensSepbySpace = line.split("\\s+"); //(O(n))
 		if (liveType.equals("out")) {
 			for (int i=1; i<=tokensSepbySpace.length-1; i++) {
-				//live-out line always contain variables that are not on the list
+				//live-out line always contain new variables (not in the array list)
 				addNewVariabletoList(tokensSepbySpace[i], lineNo); 
 			}
 		} 
-		//live-in line always contain variable that are on the list
+		//live-in line always contain variables in the array list
 		if (liveType.equals("in")) {
 			for (int i=1; i<=tokensSepbySpace.length-1; i++) {
 				//find variable and add a start line number
@@ -51,7 +53,7 @@ class Parser {
 
 	public void parseAssignStmt (String line, Integer lineNo) {
 		String[] tokensSepByEq = line.split("(\\s*):=(\\s*)"); 
-		//add a start line number to the LHS token 
+		//LHS variable is always in array list
 		addLineNoToVariableOnList(tokensSepByEq[0], lineNo , "l"); 
 		parseExpr(tokensSepByEq[1], lineNo); 
 	}
@@ -65,9 +67,12 @@ class Parser {
 		}  
 		//remove opeartors
 		String[] operands = rhs.split("((\\s*)(\\*|/|\\+|-)(\\s*))"); 
-		//remove digits
+		
 		for (int i=0; i<=operands.length-1; i++) {
+			//remove digits
 			if (!operands[i].matches("(\\d+)(\\s*)")) {
+				//RHS variables are either added to the list, have an end line 
+				//number added it, or ignored. 
 				if (addLineNoToVariableOnList(operands[i], lineNo, "r") == -1) {
 					addNewVariabletoList(operands[i], lineNo); 
 				}
@@ -108,19 +113,6 @@ class Parser {
 		return -1; 
 	}
 
-	/* method printing all object's variables and all its liveness information  
-	 * this method is used for debugging and is not part of the application
-	 */
-	public void printInfo() {
-		for (int i=0; i<=this.varList.size()-1; i++) {
-			System.out.println(this.varList.get(i).name); 
-			for(int j=0; j<=this.varList.get(i).startAtLines.size()-1; j++) {
-				System.out.println("StartLine: "+this.varList.get(i).startAtLines.get(j)); 
-				System.out.println("EndLine: "+this.varList.get(i).endAtLines.get(j)); 
-			}
-		}
-	}
-
 }
 
 
@@ -154,8 +146,101 @@ class Variable {
 } 
 
 
-public class Liveness {	
+class Register {
+
+	ArrayList<Variable> varsOnReg; 
+
+	public Register() {
+		varsOnReg = new ArrayList<Variable>(); 
+	}
+}
+
+class RegisterList {
+
+	//register number is its index on regList + 1 
+	ArrayList<Register> regList;
 	
+	public RegisterList() {
+		regList = new ArrayList<Register>(); 
+	}
+
+	/* method for a new register to list with variable assigned to it 
+	 * @param: var is the variable to be assigned to the new register
+	 */
+	public void addNewReg(Variable var) {
+		Register reg = new Register(); 
+		reg.varsOnReg.add(var); 
+		regList.add(reg); 
+	}
+
+	/* method for attempting assigning a variable to a register on register list
+	 * @param: var is the variable to be assigned
+	 * @return true if var is successfully assigned, false otherwise 
+	 */
+	public boolean assigned(Variable var) {
+		//try to assign it to a register on list
+		for (int i=0; i<=regList.size()-1; i++) {
+			for (int j=0; j<=regList.get(i).varsOnReg.size()-1; j++) {
+				if (overLap(regList.get(i).varsOnReg.get(j), var)) {
+					//try next register if there's an overlap
+					break; 
+				}
+				//if it doesn overlap with any variable on a register
+				//then assign variable to register 
+				if (j==regList.get(i).varsOnReg.size()-1) {
+					regList.get(i).varsOnReg.add(var); 		
+					return true; 
+				}
+			}
+		}
+		return false; 
+	}
+
+	/* method for checking whether 2 variables "overlap", that is, they both
+	 * exist on a same period of time
+	 * @param: var1 is the first variable for comparsion 
+	 *         var2 is the second variable for comparion
+	 * @return true if the 2 variables "overlap", false otherwise. 
+	 */
+	public boolean overLap(Variable var1, Variable var2) {
+		for (int i=0; i<var1.startAtLines.size(); i++) {
+			for (int j=0; j<var2.startAtLines.size(); j++) {
+				if ((var1.endAtLines.get(i).intValue()>=var2.endAtLines.get(j).intValue() &&
+					var2.endAtLines.get(j).intValue()>=var1.startAtLines.get(i).intValue()) 
+				    || (var1.endAtLines.get(i).intValue()>=var2.startAtLines.get(j).intValue() &&
+				       var2.startAtLines.get(j).intValue()>=var1.startAtLines.get(i).intValue())) {
+					return true; 
+				}
+			}
+		}
+		return false; 
+	}
+}
+
+//changed methods in class liveness to static to run in main 
+public class Liveness {	
+	/* method for allocating a list of variable to a register
+ 	* @param: inputVarList is the list of variables in the source code
+ 	* @return: a tree map containing a list of variables and their assigned registers
+ 	*/
+	public static TreeMap<String, Integer> registerAllocation(ArrayList<Variable> inputVarList) {		 
+		RegisterList inputRegList = new RegisterList(); 
+		//For each variable, either assign it to an existing register or a new register
+		for (int i=0; i<=inputVarList.size()-1; i++) {
+			if (!inputRegList.assigned(inputVarList.get(i))) {
+				inputRegList.addNewReg(inputVarList.get(i)); 
+			}
+		}
+		//Map the register list to the tree map 
+		TreeMap<String, Integer> tm = new TreeMap<String, Integer>();
+		for (int i=0; i<=inputRegList.regList.size()-1; i++) {
+			for (int j=0; j<=inputRegList.regList.get(i).varsOnReg.size()-1; j++) {
+				tm.put(inputRegList.regList.get(i).varsOnReg.get(j).name, i+1); 
+			}
+		} 
+		return tm; 
+	}
+
 	// PRE: fInName is a valid input file
 	// POST: returns a TreeMap mapping variables (String) to registers (Integer) 
 	public static TreeMap<String, Integer> generateSolution(String fInName) {
@@ -166,7 +251,7 @@ public class Liveness {
 			System.out.println("Please input a valid file arguement"); 
 		}	
 		try {
-			//Read the entire source code into memory 
+			//Read source code into memory 
 			BufferedReader br = new BufferedReader(new FileReader(inFile));
 			ArrayList<String> programLines = new ArrayList<String>(); 
 			String currentLine;
@@ -179,8 +264,8 @@ public class Liveness {
 			for (int i=programLines.size()-2; i>=1; i--) {
 				p.parseAssignStmt(programLines.get(i), i+1); 
 			} 
-			p.parseLiveStmt(programLines.get(0), "in", 1);
-			p.printInfo();  
+			p.parseLiveStmt(programLines.get(0), "in", 1); 
+			return registerAllocation(p.varList); 
 		} catch (IOException e) {
 			e.printStackTrace(); 
 		}
@@ -190,11 +275,28 @@ public class Liveness {
 	// PRE: t represents a valid register allocation
 	// POST: the register allocation in t is written to file solnName
 	public static void writeSolutionToFile(TreeMap<String, Integer> t, String solnName) {
+		File outFile = null; 
+		if (solnName.length() > 0) {
+			outFile = new File(solnName);
+		} else {
+			System.out.println("Invalid output"); 
+		}	
+		try {
+			//write the number of register first
+			PrintWriter pw = new PrintWriter(new FileWriter(outFile)); 
+			pw.println(t.values().stream().max(Integer::compare).get());
+			for (Map.Entry m:t.entrySet()) {
+				pw.println(m.getKey()+" "+m.getValue()); 
+			}
+			pw.close(); 
+		} catch(IOException e) {
+			e.printStackTrace(); 
+		}
 	}
-
+	
 	public static void main(String[] args) {	
 		//Assuming input file is arguement 0 and output file is arguement 1
-		generateSolution(args[0]); 
+		writeSolutionToFile(generateSolution(args[0]), args[1]);
 	}
 	
 }
