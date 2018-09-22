@@ -6,7 +6,7 @@
 * the programm allocate variables to a set of contiguous registers such that
 * a minimal number of registers is used during run time. 
 *
-* @author DEYE CHEN (44624522), LUKE MCLEAN 
+* @author DEYE CHEN (44624522), LUKE MCLEAN (44617582) 
 * @version 2.0
 * @since 2018-09-02
 */
@@ -35,29 +35,45 @@ class Parser {
 	 */
 	public void parseLiveStmt (String line, String liveType, Integer lineNo) {
 		String[] tokensSepbySpace = line.split("\\s+"); //(O(n))
-		if (liveType.equals("out")) {
+		if (liveType.equals("in")) {
 			for (int i=1; i<=tokensSepbySpace.length-1; i++) {
-				//live-out line always contain new variables (not in the array list)
+				//live-in line always contain new variables 
 				addNewVariabletoList(tokensSepbySpace[i], lineNo); 
 			}
 		} 
-		//live-in line always contain variables in the array list
-		if (liveType.equals("in")) {
+		//live-out line always contain variables in the array list
+		if (liveType.equals("out")) {
 			for (int i=1; i<=tokensSepbySpace.length-1; i++) {
 				//find variable and add a start line number
-				addLineNoToVariableOnList(tokensSepbySpace[i], lineNo, "l"); 
+				addLineNoToVariableOnList(tokensSepbySpace[i], lineNo, "r"); 
 			}
 		}
 
 	}
 
+	/* method for parsing an assignment statement
+	 * @param: line contain live-in or live-out live straight
+	 * from the source code
+	 * @add to array list containing all variables on the line
+	 */
 	public void parseAssignStmt (String line, Integer lineNo) {
+		//check for last line
+		if (line.matches("^live-out.*")) {
+			parseLiveStmt(line, "out", lineNo); 
+			return; 
+		}
 		String[] tokensSepByEq = line.split("(\\s*):=(\\s*)"); 
 		//LHS variable is always in array list
-		addLineNoToVariableOnList(tokensSepByEq[0], lineNo , "l"); 
+		if (addLineNoToVariableOnList(tokensSepByEq[0], lineNo, "l") == -1) {
+			addNewVariabletoList(tokensSepByEq[0], lineNo); 
+		}
 		parseExpr(tokensSepByEq[1], lineNo); 
 	}
 
+	/* method for parsing a an exoression line
+	 * @param: expr is a string representing an arithmetic expression
+	 * @return an array list containing all variables on the line
+	 */
 	public void parseExpr (String rhs, Integer lineNo) {
 		//consider spaces afer "[" and before "]"
 		if (rhs.matches("(mem\\[)([\\s\\S]*)")) {
@@ -71,12 +87,8 @@ class Parser {
 		for (int i=0; i<=operands.length-1; i++) {
 			//remove digits
 			if (!operands[i].matches("(\\d+)(\\s*)")) {
-				//RHS variables are either added to the list, have an end line 
-				//number added it, or ignored. 
-				if (addLineNoToVariableOnList(operands[i], lineNo, "r") == -1) {
-					addNewVariabletoList(operands[i], lineNo); 
-				}
-				
+				//RHS variable will get their endline number updated/added
+				addLineNoToVariableOnList(operands[i], lineNo, "r");
 			}	
 		}
 
@@ -84,7 +96,7 @@ class Parser {
 
 	public void addNewVariabletoList(String varName, Integer lineNo) {
 			Variable var = new Variable(varName);
-			var.addEndLineNo(lineNo); 
+			var.addStartLineNo(lineNo); 
 			this.varList.add(var);
 	}
 
@@ -99,9 +111,12 @@ class Parser {
 		for (int i=0; i<=varList.size()-1; i++) {
 			if (varList.get(i).name.equals(varOnLine)) {
 				if (flag.equals("r")) {
-					//only add an endline number if variable is initating a new live
-					if (this.varList.get(i).startAtLines.size() == this.varList.get(i).endAtLines.size()) {
+					//either update endline number or add a new one
+					if (this.varList.get(i).startAtLines.size() != this.varList.get(i).endAtLines.size()) {
 						this.varList.get(i).addEndLineNo(lineNo);
+					} else {
+						//update the last end line number
+						this.varList.get(i).endAtLines.set(this.varList.get(i).endAtLines.size()-1, lineNo); 
 					}
 					return 1; 
 				} else if (flag.equals("l")) {
@@ -252,19 +267,16 @@ public class Liveness {
 		}	
 		try {
 			//Read source code into memory 
-			BufferedReader br = new BufferedReader(new FileReader(inFile));
-			ArrayList<String> programLines = new ArrayList<String>(); 
-			String currentLine;
-			while ((currentLine = br.readLine())!=null) {
-				programLines.add(currentLine);
-			}
-			//Parse and store variables
+			BufferedReader br = new BufferedReader(new FileReader(inFile)); 
 			Parser p = new Parser();
-			p.parseLiveStmt(programLines.get(programLines.size()-1), "out", programLines.size()); 
-			for (int i=programLines.size()-2; i>=1; i--) {
-				p.parseAssignStmt(programLines.get(i), i+1); 
-			} 
-			p.parseLiveStmt(programLines.get(0), "in", 1); 
+			String currentLine = br.readLine();
+			p.parseLiveStmt(currentLine, "in", 1); 
+			int lineCounter = 2; 
+			while ((currentLine = br.readLine())!=null) {
+				//Parse and store variables 
+				p.parseAssignStmt(currentLine, new Integer(lineCounter)); 
+				lineCounter++;
+			}
 			return registerAllocation(p.varList); 
 		} catch (IOException e) {
 			e.printStackTrace(); 
@@ -293,7 +305,7 @@ public class Liveness {
 			e.printStackTrace(); 
 		}
 	}
-	
+
 	public static void main(String[] args) {	
 		//Assuming input file is arguement 0 and output file is arguement 1
 		writeSolutionToFile(generateSolution(args[0]), args[1]);
