@@ -4,7 +4,8 @@
 * a given input soruce file line by line to retrieve its unique 
 * variables and their liveness information. Based on these information,
 * the programm allocate variables to a set of contiguous registers such that
-* a minimal number of registers is used during run time. 
+* a minimal number of registers is used during run time. This following work  
+* is a collaborative project. 
 *
 * @author DEYE CHEN (44624522), LUKE MCLEAN (44617582) 
 * @version 2.0
@@ -17,9 +18,9 @@ import java.io.*;
 
 /**
  *An instance of a parser class contain an arraylist of all variables in the source code.
- *The methods of a Parser should parse an input program line and store its liveness information in the arraylist
- *Note: the parser is designed to parse each line of the program in reverse order
-*/
+ *The methods of a Parser should parse an input program line and store variables and its liveness information 
+ *in the arraylist
+ */
 class Parser {
 
 	ArrayList<Variable> varList;
@@ -30,7 +31,7 @@ class Parser {
 
 	/* method for parsing a live statement
 	 * @param: line contain live-in or live-out live straight 
-	 * from the source code
+	 * from the source code, liveTpe is string flag denoting the line type and lineNo is the line number 
 	 * @add to array list containing all variables on the line
 	 */
 	public void parseLiveStmt (String line, String liveType, Integer lineNo) {
@@ -53,7 +54,7 @@ class Parser {
 
 	/* method for parsing an assignment statement
 	 * @param: line contain live-in or live-out live straight
-	 * from the source code
+	 * from the source code, and lineNo is line number 
 	 * @add to array list containing all variables on the line
 	 */
 	public void parseAssignStmt (String line, Integer lineNo) {
@@ -71,7 +72,7 @@ class Parser {
 	}
 
 	/* method for parsing a an exoression line
-	 * @param: expr is a string representing an arithmetic expression
+	 * @param: expr is a string representing an arithmetic expression lineNo is the line number 
 	 * @return an array list containing all variables on the line
 	 */
 	public void parseExpr (String rhs, Integer lineNo) {
@@ -85,7 +86,7 @@ class Parser {
 		String[] operands = rhs.split("((\\s*)(\\*|/|\\+|-)(\\s*))"); 
 		
 		for (int i=0; i<=operands.length-1; i++) {
-			//remove digits
+			//ignore digits
 			if (!operands[i].matches("(\\d+)(\\s*)")) {
 				//RHS variable will get their endline number updated/added
 				addLineNoToVariableOnList(operands[i], lineNo, "r");
@@ -94,6 +95,10 @@ class Parser {
 
 	}
 
+	/* method for adding a new LHS variable to list 
+	 * @param: name is the name of the variable to be added to list
+	 * 		   
+	 */
 	public void addNewVariabletoList(String varName, Integer lineNo) {
 			Variable var = new Variable(varName);
 			var.addStartLineNo(lineNo); 
@@ -130,7 +135,9 @@ class Parser {
 
 }
 
-
+/*
+ * Variable class contain liveness information of a variable
+ */
 class Variable {
 
 	String name;
