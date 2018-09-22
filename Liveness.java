@@ -142,7 +142,7 @@ class Variable {
 
 	String name;
 	//example: say variable a is alive at line 2-5 and 9-11, then
-	//a.startAtLine = {5, 2}, a.endAtLine = {11, 9} 
+	//a.startAtLine = {2, 9}, a.endAtLine = {5, 11} 
 	ArrayList<Integer> startAtLines; 
 	ArrayList<Integer> endAtLines;
 
