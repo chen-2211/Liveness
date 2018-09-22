@@ -76,13 +76,13 @@ class Parser {
 	 * @return an array list containing all variables on the line
 	 */
 	public void parseExpr (String rhs, Integer lineNo) {
-		//consider spaces afer "[" and before "]"
-		if (rhs.matches("(mem\\[)([\\s\\S]*)")) {
+		//remove mem[]
+		if (rhs.matches("^mem\\[.*")) {
 			rhs = rhs.substring(4, rhs.length()); 
 			StringTokenizer st = new StringTokenizer(rhs, "]");
 			rhs = st.nextToken(); 
 		}  
-		//remove opeartors
+		//remove arithmetic opeartors
 		String[] operands = rhs.split("((\\s*)(\\*|/|\\+|-)(\\s*))"); 
 		
 		for (int i=0; i<=operands.length-1; i++) {
